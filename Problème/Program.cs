@@ -91,8 +91,8 @@ namespace Problème
         {
             MySqlParameter numeroP = new MySqlParameter("@nump", MySqlDbType.VarChar);
             numeroP.Value = numP;
-            // numI_p > 66 car lorsque numI_p <= 66 il s'agit du catalogue et non du stock
-            string requete = "DELETE FROM piece WHERE numP = @numP AND numI_p > 66;";
+            // numI_p > 63 car lorsque numI_p <= 63 il s'agit du catalogue et non du stock
+            string requete = "DELETE FROM piece WHERE numP = @numP AND numI_p > 63;";
             MySqlCommand command = maConnexion.CreateCommand();
             command.CommandText = requete;
             command.Parameters.Add(numeroP);
@@ -108,6 +108,10 @@ namespace Problème
             command.CommandText = requete;
             command.Parameters.Add(numeroModele);
             command.ExecuteReader();
+        }
+        static void CreationVelo(string numModele, MySqlConnection maConnexion)
+        {
+            
         }
         #endregion
         #region Gestion des fournisseurs
