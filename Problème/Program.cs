@@ -110,6 +110,40 @@ namespace Problème
             command.ExecuteReader();
         }
         #endregion
+        #region Gestion des fournisseurs
+        static void CreationFournisseur(string numSiret, string nomE, string contact, string adresse_F, int libelle, MySqlConnection maConnexion)
+        {
+            MySqlParameter numSiret_2 = new MySqlParameter("@numSiret", MySqlDbType.VarChar);
+            numSiret_2.Value = numSiret;
+            MySqlParameter nomE_2 = new MySqlParameter("@nomE", MySqlDbType.VarChar);
+            nomE_2.Value = nomE;
+            MySqlParameter contact_2 = new MySqlParameter("@contact", MySqlDbType.VarChar);
+            contact_2.Value = contact;
+            MySqlParameter adresse_F_2 = new MySqlParameter("@adresse_F", MySqlDbType.VarChar);
+            adresse_F_2.Value = adresse_F;
+            MySqlParameter libelle_2 = new MySqlParameter("@libelle", MySqlDbType.Int32);
+            libelle_2.Value = libelle;
+            string requete = "INSERT INTO fournisseur VALUES (@numSiret,@nomE,@contact,@adresse_F,@libelle);";
+            MySqlCommand command = maConnexion.CreateCommand();
+            command.CommandText = requete;
+            command.Parameters.Add(numSiret_2);
+            command.Parameters.Add(nomE_2);
+            command.Parameters.Add(contact_2);
+            command.Parameters.Add(adresse_F_2);
+            command.Parameters.Add(libelle_2);
+            command.ExecuteReader();
+        }
+        static void SuppresionFournisseur(string numSiret, MySqlConnection maConnexion)
+        {
+            MySqlParameter numSiret_2 = new MySqlParameter("@numSiret", MySqlDbType.VarChar);
+            numSiret_2.Value = numSiret;
+            string requete = "DELETE FROM fournisseur WHERE numSiret=@numSiret;";
+            MySqlCommand command = maConnexion.CreateCommand();
+            command.CommandText = requete;
+            command.Parameters.Add(numSiret_2);
+            command.ExecuteReader();
+        }
+        #endregion
         static void Main(string[] args)
         {
             #region Ouverture de connexion
@@ -130,7 +164,7 @@ namespace Problème
                 return;
             }
             #endregion
-            SuppressionVelo("115", maConnexion);
+            SuppresionFournisseur("55555555555555", maConnexion);
             Console.ReadKey();
         }
     }
