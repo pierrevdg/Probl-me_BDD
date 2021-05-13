@@ -27,6 +27,7 @@ namespace Problème
             newDate += date[1];
             return newDate;
         }
+        #region Gestion des pièces et des vélos
         //La fonction prend en argument le numéro de pièce 
         static void InsertionPiece(string numP, MySqlConnection maConnexion)
         {
@@ -86,6 +87,29 @@ namespace Problème
             }
             #endregion
         }
+        static void SuppressionPiece(string numP, MySqlConnection maConnexion)
+        {
+            MySqlParameter numeroP = new MySqlParameter("@nump", MySqlDbType.VarChar);
+            numeroP.Value = numP;
+            // numI_p > 66 car lorsque numI_p <= 66 il s'agit du catalogue et non du stock
+            string requete = "DELETE FROM piece WHERE numP = @numP AND numI_p > 66;";
+            MySqlCommand command = maConnexion.CreateCommand();
+            command.CommandText = requete;
+            command.Parameters.Add(numeroP);
+            command.ExecuteReader();
+        }
+        static void SuppressionVelo(string numModele, MySqlConnection maConnexion)
+        {
+            MySqlParameter numeroModele = new MySqlParameter("@numModele", MySqlDbType.VarChar);
+            numeroModele.Value = numModele;
+            // numI > 14 car lorsque numI_p <= 14 il s'agit du catalogue et non du stock
+            string requete = "DELETE FROM bicyclette WHERE numModele = @numModele AND numI > 14;";
+            MySqlCommand command = maConnexion.CreateCommand();
+            command.CommandText = requete;
+            command.Parameters.Add(numeroModele);
+            command.ExecuteReader();
+        }
+        #endregion
         static void Main(string[] args)
         {
             #region Ouverture de connexion
@@ -106,10 +130,7 @@ namespace Problème
                 return;
             }
             #endregion
-            //Gestion des pièces et des vélos
-            #region Test fonction InsertionPiece
-            InsertionPiece("S03", maConnexion);
-            #endregion
+            SuppressionVelo("115", maConnexion);
             Console.ReadKey();
         }
     }
