@@ -27,6 +27,11 @@ namespace Problème
             newDate += date[1];
             return newDate;
         }
+        static int SaisieNombre()
+        {
+            int nombre = Convert.ToInt32(Console.ReadLine());
+            return nombre;
+        }
         #region Gestion des pièces et des vélos
         //La fonction prend en argument le numéro de pièce 
         static void InsertionPiece(string numP, MySqlConnection maConnexion)
@@ -148,6 +153,44 @@ namespace Problème
             command.ExecuteReader();
         }
         #endregion
+        #region Gestion des commandes
+        static void CreationCommande(int numCommande, string adresse, string ville, string codePostal, string numClient, MySqlConnection maConnexion)
+        {
+            MySqlParameter numCommande_2 = new MySqlParameter("@numCommande", MySqlDbType.Int32);
+            numCommande_2.Value = numCommande;
+            MySqlParameter adresse_2 = new MySqlParameter("@adresse", MySqlDbType.VarChar);
+            adresse_2.Value = adresse;
+            MySqlParameter ville_2 = new MySqlParameter("@ville", MySqlDbType.VarChar);
+            ville_2.Value = ville;
+            MySqlParameter codePostal_2 = new MySqlParameter("@codePostal", MySqlDbType.VarChar);
+            codePostal_2.Value = codePostal;
+            MySqlParameter numClient_2 = new MySqlParameter("@numClient", MySqlDbType.VarChar);
+            numClient_2.Value = numClient;
+            DateTime dateActuelle = DateTime.Now;
+            string dateC = ConversionDate(dateActuelle.ToString());
+            DateTime dateLivraison = dateActuelle.AddDays(3); // on considère que la livraison prend 3 jours
+            string dateL = ConversionDate(dateLivraison.ToString());
+            string requete = "INSERT INTO Bon_de_commande VALUES (@numCommande,@adresse,'" + dateL + "',@ville,@codePostal,'" + dateC + "',@numclient);";
+            MySqlCommand command = maConnexion.CreateCommand();
+            command.CommandText = requete;
+            command.Parameters.Add(numCommande_2);
+            command.Parameters.Add(adresse_2);
+            command.Parameters.Add(ville_2);
+            command.Parameters.Add(codePostal_2);
+            command.Parameters.Add(numClient_2);
+            command.ExecuteReader();
+        }
+        static void SuppressionCommande(int numCommande, MySqlConnection maConnexion)
+        {
+            MySqlParameter numCommande_2 = new MySqlParameter("@numCommande", MySqlDbType.Int32);
+            numCommande_2.Value = numCommande;
+            string requete = "DELETE FROM bon_de_commande WHERE numCommande=@numCommande;";
+            MySqlCommand command = maConnexion.CreateCommand();
+            command.CommandText = requete;
+            command.Parameters.Add(numCommande_2);
+            command.ExecuteReader();
+        }
+        #endregion
         static void Main(string[] args)
         {
             #region Ouverture de connexion
@@ -168,8 +211,34 @@ namespace Problème
                 return;
             }
             #endregion
-            SuppresionFournisseur("55555555555555", maConnexion);
-            Console.ReadKey();
+            ConsoleKeyInfo cki;
+            Console.WindowHeight = 50;
+            Console.WindowWidth = 100;
+            do
+            {
+                Console.Clear();
+                Console.WriteLine("Menu :\n"
+                                 + "1. Dessiner une ligne\n"
+                                 + "2. Dessiner une matrice\n"
+                                 + "Sélectionnez l'action désirée ");
+                int choix = SaisieNombre();
+                //rajouter un try pour prendre que les trucs possibles à faire
+                switch (choix)
+                {
+                    case 1:
+                        Console.Clear();
+                        DessineMoiUneLigne(4);
+                        break;
+                    case 2:
+                        Console.Clear();
+                        DessineMoiUneMatrice('X', 4);
+                        break;
+                }
+                Console.WriteLine("Tapez Escape pour sortir ou un numero d'exo");
+                cki = Console.ReadKey();
+            }
+            while (cki.Key != ConsoleKey.Escape);
+            Console.Read();
         }
     }
 }
