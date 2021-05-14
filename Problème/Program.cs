@@ -119,6 +119,120 @@ namespace Problème
             
         }
         #endregion
+        #region Gestion des clients particuliers
+        static void CreationPersonne(string adresse, string ville, string codePostal, string province,string nom, string prenom, string tel_p, string courriel_p, int numFidelio, MySqlConnection maConnexion) 
+        {
+            #region Récupération du nombre de clients qui donnera le numéro de client
+            string requete1 = "SELECT COUNT(*) FROM client;";
+            MySqlCommand command1 = maConnexion.CreateCommand();
+            command1.CommandText = requete1;
+            MySqlDataReader reader1 = command1.ExecuteReader();
+            int numClient = 0;
+            while (reader1.Read())
+            {
+                numClient = Convert.ToInt32(reader1[0]) + 1;
+            }
+            reader1.Close();
+            #endregion
+            #region Creation du client et de la personne
+            MySqlParameter adresse_2 = new MySqlParameter("@adresse", MySqlDbType.VarChar);
+            adresse_2.Value = adresse;
+            MySqlParameter ville_2 = new MySqlParameter("@ville", MySqlDbType.VarChar);
+            ville_2.Value = ville;
+            MySqlParameter codePostal_2 = new MySqlParameter("@codePostal", MySqlDbType.VarChar);
+            codePostal_2.Value = codePostal;
+            MySqlParameter province_2 = new MySqlParameter("@province", MySqlDbType.VarChar);
+            province_2.Value = province;
+            MySqlParameter nom_2 = new MySqlParameter("@nom", MySqlDbType.VarChar);
+            nom_2.Value = nom;
+            MySqlParameter prenom_2 = new MySqlParameter("@prenom", MySqlDbType.VarChar);
+            prenom_2.Value = prenom;
+            MySqlParameter tel_p_2 = new MySqlParameter("@tel_p", MySqlDbType.VarChar);
+            tel_p_2.Value = tel_p;
+            MySqlParameter courriel_p_2 = new MySqlParameter("@courriel_p", MySqlDbType.VarChar);
+            courriel_p_2.Value = courriel_p;
+            MySqlParameter numFidelio_2 = new MySqlParameter("@numFidelio", MySqlDbType.Int32);
+            numFidelio_2.Value = numFidelio;
+            string requete2 = "INSERT INTO client VALUES (" + numClient + ",@adresse,@ville,@codePostal,@province);" 
+                          + "\nINSERT INTO Personne VALUES (@nom,@prenom," + numClient + ",@tel_p,@courriel_p,@numFidelio,null,null);";
+            MySqlCommand command2 = maConnexion.CreateCommand();
+            command2.CommandText = requete2;
+            command2.Parameters.Add(adresse_2);
+            command2.Parameters.Add(ville_2);
+            command2.Parameters.Add(codePostal_2);
+            command2.Parameters.Add(province_2);
+            command2.Parameters.Add(nom_2);
+            command2.Parameters.Add(prenom_2);
+            command2.Parameters.Add(tel_p_2);
+            command2.Parameters.Add(courriel_p_2);
+            command2.Parameters.Add(numFidelio_2);
+            command2.ExecuteReader();
+            #endregion
+        }
+        // La fonction suppresionClient permet de supprimer un client et donc de supprimer à la fois une personne et une boutique
+        static void SuppressionClient(int numClient, MySqlConnection maConnexion)
+        {
+            MySqlParameter numClient_2 = new MySqlParameter("@numClient", MySqlDbType.VarChar);
+            numClient_2.Value = numClient;
+            string requete = "DELETE FROM client WHERE numClient = @numClient;";  
+            MySqlCommand command = maConnexion.CreateCommand();
+            command.CommandText = requete;
+            command.Parameters.Add(numClient_2);
+            command.ExecuteReader();
+        }
+        #endregion
+        #region Gestion des Boutiques
+        static void CreationBoutique(string adresse, string ville, string codePostal, string province,string nom_b, string tel_b, string courriel_b, string nomContact, int remise, MySqlConnection maConnexion)
+        {
+            #region Récupération du nombre de clients qui donnera le numéro de client
+            string requete1 = "SELECT COUNT(*) FROM client;";
+            MySqlCommand command1 = maConnexion.CreateCommand();
+            command1.CommandText = requete1;
+            MySqlDataReader reader1 = command1.ExecuteReader();
+            int numClient = 0;
+            while (reader1.Read())
+            {
+                numClient = Convert.ToInt32(reader1[0]) + 1;
+            }
+            reader1.Close();
+            #endregion
+            #region Remplissage des coordonnées de la personne
+            MySqlParameter adresse_2 = new MySqlParameter("@adresse", MySqlDbType.VarChar);
+            adresse_2.Value = adresse;
+            MySqlParameter ville_2 = new MySqlParameter("@ville", MySqlDbType.VarChar);
+            ville_2.Value = ville;
+            MySqlParameter codePostal_2 = new MySqlParameter("@codePostal", MySqlDbType.VarChar);
+            codePostal_2.Value = codePostal;
+            MySqlParameter province_2 = new MySqlParameter("@province", MySqlDbType.VarChar);
+            province_2.Value = province;
+            MySqlParameter nom_b_2 = new MySqlParameter("@nom_b", MySqlDbType.VarChar);
+            nom_b_2.Value = nom_b;
+            MySqlParameter tel_b_2 = new MySqlParameter("@tel_b", MySqlDbType.VarChar);
+            tel_b_2.Value = tel_b;
+            MySqlParameter courriel_b_2 = new MySqlParameter("@courriel_b", MySqlDbType.VarChar);
+            courriel_b_2.Value = courriel_b;
+            MySqlParameter nomContact_2 = new MySqlParameter("@nomContact", MySqlDbType.VarChar);
+            nomContact_2.Value = nomContact;
+            MySqlParameter remise_2 = new MySqlParameter("@remise", MySqlDbType.Int32);
+            remise_2.Value = remise;
+            string requete2 = "INSERT INTO client VALUES (" + numClient + ",@adresse,@ville,@codePostal,@province);"
+                          + "\nINSERT INTO boutique VALUES (@nom_b,@tel_b,@courriel_b,@nomContact,@remise," + numClient + ");";
+            // A VERIFIER (numClient?)
+            MySqlCommand command2 = maConnexion.CreateCommand();
+            command2.CommandText = requete2;
+            command2.Parameters.Add(adresse_2);
+            command2.Parameters.Add(ville_2);
+            command2.Parameters.Add(codePostal_2);
+            command2.Parameters.Add(province_2);
+            command2.Parameters.Add(nom_b_2);
+            command2.Parameters.Add(tel_b_2);
+            command2.Parameters.Add(courriel_b_2);
+            command2.Parameters.Add(nomContact_2);
+            command2.Parameters.Add(remise_2);
+            command2.ExecuteReader();
+            #endregion
+        }
+        #endregion
         #region Gestion des fournisseurs
         static void CreationFournisseur(string numSiret, string nomE, string contact, string adresse_F, int libelle, MySqlConnection maConnexion)
         {
@@ -227,11 +341,11 @@ namespace Problème
                 {
                     case 1:
                         Console.Clear();
-                        DessineMoiUneLigne(4);
+                        //DessineMoiUneLigne(4);
                         break;
                     case 2:
                         Console.Clear();
-                        DessineMoiUneMatrice('X', 4);
+                        //DessineMoiUneMatrice('X', 4);
                         break;
                 }
                 Console.WriteLine("Tapez Escape pour sortir ou un numero d'exo");
