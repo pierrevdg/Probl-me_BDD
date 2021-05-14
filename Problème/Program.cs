@@ -32,7 +32,7 @@ namespace Problème
             int nombre = Convert.ToInt32(Console.ReadLine());
             return nombre;
         }
-        #region Gestion des pièces et des vélos
+        #region Gestion des pièces
         //La fonction prend en argument le numéro de pièce 
         static void InsertionPiece(string numP, MySqlConnection maConnexion)
         {
@@ -103,6 +103,21 @@ namespace Problème
             command.Parameters.Add(numeroP);
             command.ExecuteReader();
         }
+        static void ModificationPiece(string colonne, string nouvelleValeur, string numP, MySqlConnection maConnexion)
+        {
+            MySqlParameter nouvelleValeur_2 = new MySqlParameter("@nouvelleValeur", MySqlDbType.VarChar);
+            nouvelleValeur_2.Value = nouvelleValeur;
+            MySqlParameter numP_2 = new MySqlParameter("@numP", MySqlDbType.VarChar);
+            numP_2.Value = numP;
+            string requete = "UPDATE piece SET " + colonne + " = @nouvelleValeur WHERE numP= @numP;";
+            MySqlCommand command = maConnexion.CreateCommand();
+            command.CommandText = requete;
+            command.Parameters.Add(nouvelleValeur_2);
+            command.Parameters.Add(numP_2);
+            command.ExecuteReader();
+        }
+        #endregion
+        #region Gestion des velos
         static void SuppressionVelo(string numModele, MySqlConnection maConnexion)
         {
             MySqlParameter numeroModele = new MySqlParameter("@numModele", MySqlDbType.VarChar);
@@ -114,9 +129,49 @@ namespace Problème
             command.Parameters.Add(numeroModele);
             command.ExecuteReader();
         }
+        // A faire
         static void CreationVelo(string numModele, MySqlConnection maConnexion)
         {
             
+        }
+        static void ModificationVelo(string colonne, string nouvelleValeur, string numModele, MySqlConnection maConnexion)
+        {
+            MySqlParameter nouvelleValeur_2 = new MySqlParameter("@nouvelleValeur", MySqlDbType.VarChar);
+            nouvelleValeur_2.Value = nouvelleValeur;
+            MySqlParameter numModele_2 = new MySqlParameter("@numModele", MySqlDbType.VarChar);
+            numModele_2.Value = numModele;
+            string requete = "UPDATE bicyclette SET " + colonne + " = @nouvelleValeur WHERE numModele= @numModele;";
+            MySqlCommand command = maConnexion.CreateCommand();
+            command.CommandText = requete;
+            command.Parameters.Add(nouvelleValeur_2);
+            command.Parameters.Add(numModele_2);
+            command.ExecuteReader();
+        }
+        #endregion
+        #region Gestion des clients en général
+        // La fonction suppresionClient permet de supprimer un client et donc de supprimer à la fois une personne et une boutique
+        static void SuppressionClient(int numClient, MySqlConnection maConnexion)
+        {
+            MySqlParameter numClient_2 = new MySqlParameter("@numClient", MySqlDbType.VarChar);
+            numClient_2.Value = numClient;
+            string requete = "DELETE FROM client WHERE numClient = @numClient;";
+            MySqlCommand command = maConnexion.CreateCommand();
+            command.CommandText = requete;
+            command.Parameters.Add(numClient_2);
+            command.ExecuteReader();
+        }
+        static void ModificationClient(string colonne, string nouvelleValeur, int numClient, MySqlConnection maConnexion)
+        {
+            MySqlParameter nouvelleValeur_2 = new MySqlParameter("@nouvelleValeur", MySqlDbType.VarChar);
+            nouvelleValeur_2.Value = nouvelleValeur;
+            MySqlParameter numClient_2 = new MySqlParameter("@numClient", MySqlDbType.Int32);
+            numClient_2.Value = numClient;
+            string requete = "UPDATE client SET " + colonne + " = @nouvelleValeur WHERE numClient= @numClient;";
+            MySqlCommand command = maConnexion.CreateCommand();
+            command.CommandText = requete;
+            command.Parameters.Add(nouvelleValeur_2);
+            command.Parameters.Add(numClient_2);
+            command.ExecuteReader();
         }
         #endregion
         #region Gestion des clients particuliers
@@ -169,15 +224,18 @@ namespace Problème
             command2.ExecuteReader();
             #endregion
         }
-        // La fonction suppresionClient permet de supprimer un client et donc de supprimer à la fois une personne et une boutique
-        static void SuppressionClient(int numClient, MySqlConnection maConnexion)
+        // Pour modification personne il faut ajouter le fait que quand on a la colonne = Fidélio alors il faut aussi modfié les dates
+        static void ModificationPersonne(string colonne, string nouvelleValeur, string nom, MySqlConnection maConnexion)
         {
-            MySqlParameter numClient_2 = new MySqlParameter("@numClient", MySqlDbType.VarChar);
-            numClient_2.Value = numClient;
-            string requete = "DELETE FROM client WHERE numClient = @numClient;";  
+            MySqlParameter nouvelleValeur_2 = new MySqlParameter("@nouvelleValeur", MySqlDbType.VarChar);
+            nouvelleValeur_2.Value = nouvelleValeur;
+            MySqlParameter nom_2 = new MySqlParameter("@nom", MySqlDbType.VarChar);
+            nom_2.Value = nom;
+            string requete = "UPDATE personne SET " + colonne + " = @nouvelleValeur WHERE nom= @nom;";
             MySqlCommand command = maConnexion.CreateCommand();
             command.CommandText = requete;
-            command.Parameters.Add(numClient_2);
+            command.Parameters.Add(nouvelleValeur_2);
+            command.Parameters.Add(nom_2);
             command.ExecuteReader();
         }
         #endregion
@@ -232,6 +290,19 @@ namespace Problème
             command2.ExecuteReader();
             #endregion
         }
+        static void ModificationBoutique(string colonne, string nouvelleValeur, string nom_b, MySqlConnection maConnexion)
+        {
+            MySqlParameter nouvelleValeur_2 = new MySqlParameter("@nouvelleValeur", MySqlDbType.VarChar);
+            nouvelleValeur_2.Value = nouvelleValeur;
+            MySqlParameter nom_b_2 = new MySqlParameter("@nom_b", MySqlDbType.VarChar);
+            nom_b_2.Value = nom_b;
+            string requete = "UPDATE boutique SET " + colonne + " = @nouvelleValeur WHERE nom_b = @nom_b;";
+            MySqlCommand command = maConnexion.CreateCommand();
+            command.CommandText = requete;
+            command.Parameters.Add(nouvelleValeur_2);
+            command.Parameters.Add(nom_b_2);
+            command.ExecuteReader();
+        }
         #endregion
         #region Gestion des fournisseurs
         static void CreationFournisseur(string numSiret, string nomE, string contact, string adresse_F, int libelle, MySqlConnection maConnexion)
@@ -263,6 +334,19 @@ namespace Problème
             string requete = "DELETE FROM fournisseur WHERE numSiret=@numSiret;";
             MySqlCommand command = maConnexion.CreateCommand();
             command.CommandText = requete;
+            command.Parameters.Add(numSiret_2);
+            command.ExecuteReader();
+        }
+        static void ModificationFournisseur(string colonne, string nouvelleValeur, string numSiret, MySqlConnection maConnexion)
+        {
+            MySqlParameter nouvelleValeur_2 = new MySqlParameter("@nouvelleValeur", MySqlDbType.VarChar);
+            nouvelleValeur_2.Value = nouvelleValeur;
+            MySqlParameter numSiret_2 = new MySqlParameter("@numSiret", MySqlDbType.VarChar);
+            numSiret_2.Value = numSiret;
+            string requete = "UPDATE fournisseur SET " + colonne + " = @nouvelleValeur WHERE numSiret = @numSiret;";
+            MySqlCommand command = maConnexion.CreateCommand();
+            command.CommandText = requete;
+            command.Parameters.Add(nouvelleValeur_2);
             command.Parameters.Add(numSiret_2);
             command.ExecuteReader();
         }
@@ -304,6 +388,19 @@ namespace Problème
             command.Parameters.Add(numCommande_2);
             command.ExecuteReader();
         }
+        static void ModificationCommande(string colonne, string nouvelleValeur,int numCommande, MySqlConnection maConnexion)
+        {
+            MySqlParameter nouvelleValeur_2 = new MySqlParameter("@nouvelleValeur", MySqlDbType.VarChar);
+            nouvelleValeur_2.Value = nouvelleValeur;
+            MySqlParameter numCommande_2 = new MySqlParameter("@numCommande", MySqlDbType.Int32);
+            numCommande_2.Value = numCommande;
+            string requete = "UPDATE bon_de_commande SET " + colonne + " = @nouvelleValeur WHERE numCommande = @numCommande;";
+            MySqlCommand command = maConnexion.CreateCommand();
+            command.CommandText = requete;
+            command.Parameters.Add(nouvelleValeur_2);
+            command.Parameters.Add(numCommande_2);
+            command.ExecuteReader();
+        }
         #endregion
         static void Main(string[] args)
         {
@@ -325,34 +422,36 @@ namespace Problème
                 return;
             }
             #endregion
-            ConsoleKeyInfo cki;
-            Console.WindowHeight = 50;
-            Console.WindowWidth = 100;
-            do
-            {
-                Console.Clear();
-                Console.WriteLine("Menu :\n"
-                                 + "1. Dessiner une ligne\n"
-                                 + "2. Dessiner une matrice\n"
-                                 + "Sélectionnez l'action désirée ");
-                int choix = SaisieNombre();
-                //rajouter un try pour prendre que les trucs possibles à faire
-                switch (choix)
-                {
-                    case 1:
-                        Console.Clear();
-                        //DessineMoiUneLigne(4);
-                        break;
-                    case 2:
-                        Console.Clear();
-                        //DessineMoiUneMatrice('X', 4);
-                        break;
-                }
-                Console.WriteLine("Tapez Escape pour sortir ou un numero d'exo");
-                cki = Console.ReadKey();
-            }
-            while (cki.Key != ConsoleKey.Escape);
-            Console.Read();
+            //ConsoleKeyInfo cki;
+            //Console.WindowHeight = 50;
+            //Console.WindowWidth = 100;
+            //do
+            //{
+            //    Console.Clear();
+            //    Console.WriteLine("Menu :\n"
+            //                     + "1. Dessiner une ligne\n"
+            //                     + "2. Dessiner une matrice\n"
+            //                     + "Sélectionnez l'action désirée ");
+            //    int choix = SaisieNombre();
+            //    //rajouter un try pour prendre que les trucs possibles à faire
+            //    switch (choix)
+            //    {
+            //        case 1:
+            //            Console.Clear();
+            //            //DessineMoiUneLigne(4);
+            //            break;
+            //        case 2:
+            //            Console.Clear();
+            //            //DessineMoiUneMatrice('X', 4);
+            //            break;
+            //    }
+            //    Console.WriteLine("Tapez Escape pour sortir ou un numero d'exo");
+            //    cki = Console.ReadKey();
+            //}
+            //while (cki.Key != ConsoleKey.Escape);
+            //Console.Read();
+            ModificationCommande("adresseL", "RIEN", 1, maConnexion);
+            Console.ReadKey();
         }
     }
 }
