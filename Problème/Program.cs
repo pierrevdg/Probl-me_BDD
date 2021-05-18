@@ -539,7 +539,7 @@ namespace Problème
             reader.Close();
         }
         #endregion
-        // Problème avec la requête on ne récupère le nom des pièces quand la quantité est égale à 0
+        // Problème avec la requête on ne récupère pas le nom des pièces quand la quantité est égale à 0
         #region Inventaire des pièces
         static void InventairePieces(MySqlConnection maConnexion)
         {
