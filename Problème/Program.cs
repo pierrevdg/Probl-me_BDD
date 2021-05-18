@@ -352,10 +352,20 @@ namespace Problème
         }
         #endregion
         #region Gestion des commandes
-        static void CreationCommande(int numCommande, string adresse, string ville, string codePostal, string numClient, MySqlConnection maConnexion)
+        static void CreationCommande(string adresse, string ville, string codePostal, string numClient, MySqlConnection maConnexion)
         {
-            MySqlParameter numCommande_2 = new MySqlParameter("@numCommande", MySqlDbType.Int32);
-            numCommande_2.Value = numCommande;
+            #region Récupération du numéro de commande
+            string requete1 = "SELECT COUNT(*) FROM bon_de_commande;";
+            MySqlCommand command1 = maConnexion.CreateCommand();
+            command1.CommandText = requete1;
+            MySqlDataReader reader1 = command1.ExecuteReader();
+            int numCommande = 0;
+            while (reader1.Read())
+            {
+                numCommande = Convert.ToInt32(reader1[0]) + 1;
+            }
+            reader1.Close();
+            #endregion
             MySqlParameter adresse_2 = new MySqlParameter("@adresse", MySqlDbType.VarChar);
             adresse_2.Value = adresse;
             MySqlParameter ville_2 = new MySqlParameter("@ville", MySqlDbType.VarChar);
@@ -368,10 +378,9 @@ namespace Problème
             string dateC = ConversionDate(dateActuelle.ToString());
             DateTime dateLivraison = dateActuelle.AddDays(3); // on considère que la livraison prend 3 jours
             string dateL = ConversionDate(dateLivraison.ToString());
-            string requete = "INSERT INTO Bon_de_commande VALUES (@numCommande,@adresse,'" + dateL + "',@ville,@codePostal,'" + dateC + "',@numclient);";
+            string requete = "INSERT INTO Bon_de_commande VALUES (" + numCommande + ",@adresse,'" + dateL + "',@ville,@codePostal,'" + dateC + "',@numclient);";
             MySqlCommand command = maConnexion.CreateCommand();
             command.CommandText = requete;
-            command.Parameters.Add(numCommande_2);
             command.Parameters.Add(adresse_2);
             command.Parameters.Add(ville_2);
             command.Parameters.Add(codePostal_2);
@@ -402,6 +411,189 @@ namespace Problème
             command.ExecuteReader();
         }
         #endregion
+        // Problème dans les moyennes piece et vélos, il faut prendre en compte également les commandes où il y a juste des vélos commandés dans la moyenne pièce et inversement pour la moyenne vélo
+        #region Moyenne du nombre de pièces par commande
+        static double MoyennePieceCommande(MySqlConnection maConnexion)
+        {
+            string requete = "SELECT COUNT(*)/COUNT(DISTINCT p_numCommande) FROM Piece WHERE p_numCommande IS NOT NULL;";
+            MySqlCommand command = maConnexion.CreateCommand();
+            command.CommandText = requete;
+            MySqlDataReader reader = command.ExecuteReader();
+            double moyenne = 0;
+            while (reader.Read())
+            {
+                moyenne = Convert.ToDouble(reader[0]);
+            }
+            reader.Close();
+            return moyenne;
+        }
+        #endregion
+        #region Moyenne du nombre de vélos par commande
+        static double MoyenneVeloCommande(MySqlConnection maConnexion)
+        {
+            string requete = "SELECT COUNT(*)/COUNT(DISTINCT numCommande) FROM Bicyclette WHERE numCommande IS NOT NULL;";
+            MySqlCommand command = maConnexion.CreateCommand();
+            command.CommandText = requete;
+            MySqlDataReader reader = command.ExecuteReader();
+            double moyenne = 0;
+            while (reader.Read())
+            {
+                moyenne = Convert.ToDouble(reader[0]);
+            }
+            reader.Close();
+            return moyenne;
+        }
+        #endregion
+        //Requête pas fonctionnel ici
+        #region Moyenne des montants de commande
+        static void MoyenneCommande(MySqlConnection maConnexion)
+        {
+            string requete = "SELECT SUM(prixV+prixP)/COUNT(DISTINCT numCommande) AS moyenne_commande FROM Bicyclette B, Piece P, Envoi E WHERE P.numI_p = E.numI_p AND numCommande IS NOT NULL AND p_numCommande IS NOT NULL;";
+            MySqlCommand command = maConnexion.CreateCommand();
+            command.CommandText = requete;
+
+            MySqlDataReader reader = command.ExecuteReader();
+
+            string[] valueString = new string[reader.FieldCount];
+            //Rajouter des lignes ?
+            while (reader.Read())
+            {
+                for (int i = 0; i < reader.FieldCount; i++)
+                {
+                    valueString[i] = reader.GetValue(i).ToString(); //VERIFIER
+                    Console.Write(valueString[i] + " , ");
+                }
+                Console.WriteLine();
+                reader.Close();
+                command.Dispose();
+            }
+        }
+        #endregion
+        // La requête n'est pas fonctionnelle
+        // Chacune des 2 requêtes sans l'union fonctionne mais l'union des 2 retourne simplement la première requête
+        #region Meilleurs clients en fonction du nombre de pièces vendues
+        static void MeilleursClients(MySqlConnection maConnexion)
+        {
+            string requete = "SELECT nom, COUNT(P.numI_p) AS nb_pieces FROM Piece P, Personne Pe, Bon_De_Commande B WHERE p_numCommande IS NOT NULL AND Pe.numClient = c_numClient AND B.numCommande = p_numCommande GROUP BY p_numCommande UNION SELECT nom_B, COUNT(P.numI_p) AS nb_pieces FROM Piece P, Bon_De_Commande B, Boutique Bo WHERE p_numCommande IS NOT NULL AND Bo.b_numClient = c_numClient AND B.numCommande = p_numCommande GROUP BY p_numCommande ORDER BY nb_pieces LIMIT 3;";
+            MySqlCommand command = maConnexion.CreateCommand();
+            command.CommandText = requete;
+
+            MySqlDataReader reader = command.ExecuteReader();
+
+            string[] valueString = new string[reader.FieldCount];
+            //Rajouter des lignes ?
+            while (reader.Read())
+            {
+                // Boucle à limiter car récupère 2 colonnes de la ligne
+                for (int i = 0; i < reader.FieldCount; i++)
+                {
+                    valueString[i] = reader.GetValue(i).ToString(); //VERIFIER
+                    Console.Write(valueString[i] + " , ");
+                }
+                Console.WriteLine();
+                reader.Close();
+                command.Dispose();
+            }
+        }
+        #endregion
+        #region Liste des membres pour chaque programme + date d'expiration
+        static void StatsFidelio(MySqlConnection maConnexion)
+        {
+            string requete = "SELECT description_F, nom, dateF FROM Personne NATURAL JOIN fidelio WHERE numFidelio != 0 ORDER BY numFidelio;";
+            MySqlCommand command = maConnexion.CreateCommand();
+            command.CommandText = requete;
+            MySqlDataReader reader = command.ExecuteReader();
+            while (reader.Read())
+            {
+                Console.WriteLine(reader[0] + ", nom : " + reader[1] + ", date d'expiration : " + reader[2].ToString().Substring(0,10));
+            }
+            reader.Close();
+        }
+        #endregion
+        #region Quantités vendues de chaque item
+        static void QuantitesVendues(MySqlConnection maConnexion)
+        {
+            string requete = "SELECT nomV AS article, COUNT(*) - 1 AS quantite FROM Bicyclette GROUP BY nomV, grandeur UNION SELECT numP AS article, COUNT(*)-1 AS quantite FROM Piece GROUP BY nomP, numP;";
+            MySqlCommand command = maConnexion.CreateCommand();
+            command.CommandText = requete;
+            MySqlDataReader reader = command.ExecuteReader();
+            while (reader.Read())
+            {
+                Console.WriteLine("Article : " + reader[0] + ", ventes : " + reader[1]);
+            }
+            reader.Close();
+        }
+        #endregion
+        // Trouver comment ajouter les catégories de vélo où on a 0 de quantité 
+        #region Inventaire catégorie de vélos
+        static void InventaireCategorieVelos(MySqlConnection maConnexion)
+        {
+            string requete = "SELECT DISTINCT l_produit AS ligne_produit, COUNT(*) AS quantite FROM Bicyclette WHERE numI > 15 GROUP BY l_produit;";
+            MySqlCommand command = maConnexion.CreateCommand();
+            command.CommandText = requete;
+            MySqlDataReader reader = command.ExecuteReader();
+            while (reader.Read())
+            {
+                Console.WriteLine("Catégorie vélo : " + reader[0] + ", quantité : " + reader[1]);
+            }
+            reader.Close();
+        }
+        #endregion
+        // Problème avec la requête on ne récupère le nom des pièces quand la quantité est égale à 0
+        #region Inventaire des pièces
+        static void InventairePieces(MySqlConnection maConnexion)
+        {
+            string requete = "SELECT DISTINCT numP AS numero_modele, COUNT(*) AS quantite FROM Piece WHERE numI_p > 63 AND p_numCommande IS NULL GROUP BY numP;";
+            MySqlCommand command = maConnexion.CreateCommand();
+            command.CommandText = requete;
+            MySqlDataReader reader = command.ExecuteReader();
+            while (reader.Read())
+            {
+                Console.WriteLine("Piece : " + reader[0] + ", quantite : " + reader[1]);
+            }
+            reader.Close();
+        }
+        #endregion
+        // Même probleème que pour les autres requêtes d'inventaire
+        #region Inventaire de vélos
+        static void InventaireVelos(MySqlConnection maConnexion)
+        {
+            string requete = "SELECT DISTINCT nomV, grandeur, COUNT(*) AS quantite FROM Bicyclette WHERE numI > 15 AND numCommande IS NULL GROUP BY nomV, grandeur;";
+            MySqlCommand command = maConnexion.CreateCommand();
+            command.CommandText = requete;
+            MySqlDataReader reader = command.ExecuteReader();
+            while (reader.Read())
+            {
+                Console.WriteLine(reader[0] + ", taille : " + reader[1] + " , quantite : " + reader[2]);
+            }
+            reader.Close();
+        }
+        #endregion
+        // Pas compris ce que devait donner comme information cette requête
+        #region Inventaire fournisseur
+        static void InventaireFournisseur(MySqlConnection maConnexion)
+        {
+            string requete = "SELECT DISTINCT numP, nomP, COUNT(*) AS quantite, contact, libelle FROM Piece P, Fournisseur F, Envoi E WHERE F.numSiret = E.numSiret AND E.numI_p = P.numI_p GROUP BY contact;";
+            MySqlCommand command = maConnexion.CreateCommand();
+            command.CommandText = requete;
+
+            MySqlDataReader reader = command.ExecuteReader();
+
+            string[] valueString = new string[reader.FieldCount];
+            //Rajouter des lignes ?
+            while (reader.Read())
+            {
+                for (int i = 0; i < reader.FieldCount; i++)
+                {
+                    valueString[i] = reader.GetValue(i).ToString(); //VERIFIER
+                    Console.Write(valueString[i] + " , ");
+                }
+                Console.WriteLine();
+                reader.Close();
+                command.Dispose();
+            }
+        }
+        #endregion
         static void Main(string[] args)
         {
             #region Ouverture de connexion
@@ -422,36 +614,84 @@ namespace Problème
                 return;
             }
             #endregion
-            //ConsoleKeyInfo cki;
-            //Console.WindowHeight = 50;
-            //Console.WindowWidth = 100;
-            //do
-            //{
-            //    Console.Clear();
-            //    Console.WriteLine("Menu :\n"
-            //                     + "1. Dessiner une ligne\n"
-            //                     + "2. Dessiner une matrice\n"
-            //                     + "Sélectionnez l'action désirée ");
-            //    int choix = SaisieNombre();
-            //    //rajouter un try pour prendre que les trucs possibles à faire
-            //    switch (choix)
-            //    {
-            //        case 1:
-            //            Console.Clear();
-            //            //DessineMoiUneLigne(4);
-            //            break;
-            //        case 2:
-            //            Console.Clear();
-            //            //DessineMoiUneMatrice('X', 4);
-            //            break;
-            //    }
-            //    Console.WriteLine("Tapez Escape pour sortir ou un numero d'exo");
-            //    cki = Console.ReadKey();
-            //}
-            //while (cki.Key != ConsoleKey.Escape);
-            //Console.Read();
-            ModificationCommande("adresseL", "RIEN", 1, maConnexion);
-            Console.ReadKey();
+            #region Menu
+            ConsoleKeyInfo cki;
+            Console.WindowHeight = 50;
+            Console.WindowWidth = 100;
+            do
+            {
+                Console.Clear();
+                Console.WriteLine("Menu :\n"
+                                 + "1. Passer une commande (pour un client)\n"
+                                 + "2. Passer une commande (vers un fournisseur)\n"
+                                 + "3. Aperçu des stocks\n"
+                                 + "4. Modification d'informations\n"
+                                 + "5. Module statistiques\n"
+                                 + "6. Démo\n"
+                                 + "Sélectionnez l'action désirée ");
+                int choix = SaisieNombre();
+                //rajouter un try pour prendre que les trucs possibles à faire
+                switch (choix)
+                {
+                    case 1:
+                        bool verif = true;
+                        while (verif == true) 
+                        {
+                            Console.Clear();
+                            Console.WriteLine("Commander :\n"
+                                                   + "1. Une pièce\n"
+                                                   + "2. Un vélo\n");
+                            int choix1 = SaisieNombre();
+                            switch (choix1)
+                            {
+                                case 1:
+                                    Console.Clear();
+                                    Console.WriteLine("Enter un numéro de pièce :");
+                                    string numP = Convert.ToString(Console.ReadLine());
+                                    // Tester si la valeur entrée est bien un numéro de pièce 
+                                    // On regarde si le stock est suffisant :
+                                    MySqlParameter numP_2 = new MySqlParameter("@numP", MySqlDbType.VarChar);
+                                    numP_2.Value = numP;
+                                    string requete1 = "SELECT COUNT(*)-1 FROM Piece WHERE numP=@numP;";
+                                    MySqlCommand command1 = maConnexion.CreateCommand();
+                                    command1.CommandText = requete1;
+                                    command1.Parameters.Add(numP_2);
+                                    MySqlDataReader reader1 = command1.ExecuteReader();
+                                    int stock = 0;
+                                    while (reader1.Read())
+                                    {
+                                        stock = Convert.ToInt32(reader1[0]);
+                                    }
+                                    reader1.Close();
+                                    if(stock==0)
+                                    {
+                                        //Passer une commande 
+                                    }
+                                    else
+                                    {
+                                        if(stock<=2)
+                                        {
+                                            Console.WriteLine("Penser à recommander la pièce " + numP);
+                                        }
+                                    }
+                                    break;
+                                case 2:
+
+                                    break;
+                            }
+                        };
+                        break;
+                        
+                    case 2:
+                        Console.Clear();
+                        break;
+                }
+                Console.WriteLine("Tapez Escape pour retourner au menu principal");
+                cki = Console.ReadKey();
+            }
+            while (cki.Key != ConsoleKey.Escape);
+            Console.Read();
+            #endregion
         }
     }
 }
