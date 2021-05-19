@@ -32,6 +32,7 @@ namespace Problème
             int nombre = Convert.ToInt32(Console.ReadLine());
             return nombre;
         }
+        // PLUTOT QUE SUPPRESSION PIECE FAIRE MODIFICATION PIECE OU ON AJOUTE LE NUMERO DE LA COMMANDE
         #region Gestion des pièces
         //La fonction prend en argument le numéro de pièce 
         static void InsertionPiece(string numP, MySqlConnection maConnexion)
@@ -97,11 +98,12 @@ namespace Problème
             MySqlParameter numeroP = new MySqlParameter("@nump", MySqlDbType.VarChar);
             numeroP.Value = numP;
             // numI_p > 63 car lorsque numI_p <= 63 il s'agit du catalogue et non du stock
-            string requete = "DELETE FROM piece WHERE numP = @numP AND numI_p > 63;";
+            string requete = "DELETE FROM piece WHERE numP = @numP AND numI_p > 63 LIMIT 1;";
             MySqlCommand command = maConnexion.CreateCommand();
             command.CommandText = requete;
             command.Parameters.Add(numeroP);
             command.ExecuteReader();
+            command.Dispose();
         }
         static void ModificationPiece(string colonne, string nouvelleValeur, string numP, MySqlConnection maConnexion)
         {
@@ -109,12 +111,24 @@ namespace Problème
             nouvelleValeur_2.Value = nouvelleValeur;
             MySqlParameter numP_2 = new MySqlParameter("@numP", MySqlDbType.VarChar);
             numP_2.Value = numP;
-            string requete = "UPDATE piece SET " + colonne + " = @nouvelleValeur WHERE numP= @numP;";
+            string requete = "UPDATE piece SET " + colonne + " = @nouvelleValeur WHERE numP= @numP AND numI_p > 63 LIMIT 1;";
+            //MySqlCommand command = maConnexion.CreateCommand();
+            //command.CommandText = requete;
+            //command.Parameters.Add(nouvelleValeur_2);
+            //command.Parameters.Add(numP_2);
+            //command.ExecuteReader();
             MySqlCommand command = maConnexion.CreateCommand();
             command.CommandText = requete;
-            command.Parameters.Add(nouvelleValeur_2);
-            command.Parameters.Add(numP_2);
-            command.ExecuteReader();
+            try
+            {
+                command.ExecuteNonQuery();
+            }
+            catch (MySqlException e)
+            {
+                Console.WriteLine(" ErreurConnexion : " + e.ToString());
+                Console.ReadLine();
+                return;
+            }
         }
         #endregion
         #region Gestion des velos
@@ -132,7 +146,7 @@ namespace Problème
         // A faire
         static void CreationVelo(string numModele, MySqlConnection maConnexion)
         {
-            
+
         }
         static void ModificationVelo(string colonne, string nouvelleValeur, string numModele, MySqlConnection maConnexion)
         {
@@ -175,7 +189,7 @@ namespace Problème
         }
         #endregion
         #region Gestion des clients particuliers
-        static void CreationPersonne(string adresse, string ville, string codePostal, string province,string nom, string prenom, string tel_p, string courriel_p, int numFidelio, MySqlConnection maConnexion) 
+        static void CreationPersonne(string adresse, string ville, string codePostal, string province, string nom, string prenom, string tel_p, string courriel_p, int numFidelio, MySqlConnection maConnexion)
         {
             #region Récupération du nombre de clients qui donnera le numéro de client
             string requete1 = "SELECT COUNT(*) FROM client;";
@@ -208,7 +222,7 @@ namespace Problème
             courriel_p_2.Value = courriel_p;
             MySqlParameter numFidelio_2 = new MySqlParameter("@numFidelio", MySqlDbType.Int32);
             numFidelio_2.Value = numFidelio;
-            string requete2 = "INSERT INTO client VALUES (" + numClient + ",@adresse,@ville,@codePostal,@province);" 
+            string requete2 = "INSERT INTO client VALUES (" + numClient + ",@adresse,@ville,@codePostal,@province);"
                           + "\nINSERT INTO Personne VALUES (@nom,@prenom," + numClient + ",@tel_p,@courriel_p,@numFidelio,null,null);";
             MySqlCommand command2 = maConnexion.CreateCommand();
             command2.CommandText = requete2;
@@ -240,7 +254,7 @@ namespace Problème
         }
         #endregion
         #region Gestion des Boutiques
-        static void CreationBoutique(string adresse, string ville, string codePostal, string province,string nom_b, string tel_b, string courriel_b, string nomContact, int remise, MySqlConnection maConnexion)
+        static void CreationBoutique(string adresse, string ville, string codePostal, string province, string nom_b, string tel_b, string courriel_b, string nomContact, int remise, MySqlConnection maConnexion)
         {
             #region Récupération du nombre de clients qui donnera le numéro de client
             string requete1 = "SELECT COUNT(*) FROM client;";
@@ -352,20 +366,10 @@ namespace Problème
         }
         #endregion
         #region Gestion des commandes
-        static void CreationCommande(string adresse, string ville, string codePostal, string numClient, MySqlConnection maConnexion)
+        static void CreationCommande(int numCommande, string adresse, string ville, string codePostal, int numClient, MySqlConnection maConnexion)
         {
-            #region Récupération du numéro de commande
-            string requete1 = "SELECT COUNT(*) FROM bon_de_commande;";
-            MySqlCommand command1 = maConnexion.CreateCommand();
-            command1.CommandText = requete1;
-            MySqlDataReader reader1 = command1.ExecuteReader();
-            int numCommande = 0;
-            while (reader1.Read())
-            {
-                numCommande = Convert.ToInt32(reader1[0]) + 1;
-            }
-            reader1.Close();
-            #endregion
+            MySqlParameter numCommande_2 = new MySqlParameter("@numCommande", MySqlDbType.VarChar);
+            numCommande_2.Value = numCommande;
             MySqlParameter adresse_2 = new MySqlParameter("@adresse", MySqlDbType.VarChar);
             adresse_2.Value = adresse;
             MySqlParameter ville_2 = new MySqlParameter("@ville", MySqlDbType.VarChar);
@@ -378,9 +382,10 @@ namespace Problème
             string dateC = ConversionDate(dateActuelle.ToString());
             DateTime dateLivraison = dateActuelle.AddDays(3); // on considère que la livraison prend 3 jours
             string dateL = ConversionDate(dateLivraison.ToString());
-            string requete = "INSERT INTO Bon_de_commande VALUES (" + numCommande + ",@adresse,'" + dateL + "',@ville,@codePostal,'" + dateC + "',@numclient);";
+            string requete = "INSERT INTO Bon_de_commande VALUES (@numCommande,@adresse,'" + dateL + "',@ville,@codePostal,'" + dateC + "',@numclient);";
             MySqlCommand command = maConnexion.CreateCommand();
             command.CommandText = requete;
+            command.Parameters.Add(numCommande_2);
             command.Parameters.Add(adresse_2);
             command.Parameters.Add(ville_2);
             command.Parameters.Add(codePostal_2);
@@ -397,7 +402,7 @@ namespace Problème
             command.Parameters.Add(numCommande_2);
             command.ExecuteReader();
         }
-        static void ModificationCommande(string colonne, string nouvelleValeur,int numCommande, MySqlConnection maConnexion)
+        static void ModificationCommande(string colonne, string nouvelleValeur, int numCommande, MySqlConnection maConnexion)
         {
             MySqlParameter nouvelleValeur_2 = new MySqlParameter("@nouvelleValeur", MySqlDbType.VarChar);
             nouvelleValeur_2.Value = nouvelleValeur;
@@ -505,7 +510,7 @@ namespace Problème
             MySqlDataReader reader = command.ExecuteReader();
             while (reader.Read())
             {
-                Console.WriteLine(reader[0] + ", nom : " + reader[1] + ", date d'expiration : " + reader[2].ToString().Substring(0,10));
+                Console.WriteLine(reader[0] + ", nom : " + reader[1] + ", date d'expiration : " + reader[2].ToString().Substring(0, 10));
             }
             reader.Close();
         }
@@ -624,27 +629,44 @@ namespace Problème
                 Console.WriteLine("Menu :\n"
                                  + "1. Passer une commande (pour un client)\n"
                                  + "2. Passer une commande (vers un fournisseur)\n"
+                                 + "3. Ajouter un client à la base de données"
                                  + "3. Aperçu des stocks\n"
                                  + "4. Modification d'informations\n"
                                  + "5. Module statistiques\n"
                                  + "6. Démo\n"
+                                 + "7. TEST\n"
                                  + "Sélectionnez l'action désirée ");
                 int choix = SaisieNombre();
                 //rajouter un try pour prendre que les trucs possibles à faire
                 switch (choix)
                 {
+                    // NON FOCNTIONNEL CAR MODIFICATION PIECE N'EST PAS FOCNTIONNEL
+                    #region Passer une commande (pour un client)
                     case 1:
                         bool verif = true;
-                        while (verif == true) 
+                        while (verif == true)
                         {
+                            #region Récupération du numéro de commande
+                            string requete1 = "SELECT COUNT(*) FROM bon_de_commande;";
+                            MySqlCommand command1 = maConnexion.CreateCommand();
+                            command1.CommandText = requete1;
+                            MySqlDataReader reader1 = command1.ExecuteReader();
+                            int numCommande = 0;
+                            while (reader1.Read())
+                            {
+                                numCommande = Convert.ToInt32(reader1[0]) + 1;
+                            }
+                            reader1.Close();
+                            #endregion
                             Console.Clear();
                             Console.WriteLine("Commander :\n"
                                                    + "1. Une pièce\n"
-                                                   + "2. Un vélo\n");
+                                                   + "2. Un vélo");
                             int choix1 = SaisieNombre();
                             switch (choix1)
                             {
                                 case 1:
+                                    // PROBLEME : ON A DEJA UN OPEN READER D'OUVERT MAIS J'ARRIVE PAS A TROUVER OU
                                     Console.Clear();
                                     Console.WriteLine("Enter un numéro de pièce :");
                                     string numP = Convert.ToString(Console.ReadLine());
@@ -652,39 +674,113 @@ namespace Problème
                                     // On regarde si le stock est suffisant :
                                     MySqlParameter numP_2 = new MySqlParameter("@numP", MySqlDbType.VarChar);
                                     numP_2.Value = numP;
-                                    string requete1 = "SELECT COUNT(*)-1 FROM Piece WHERE numP=@numP;";
-                                    MySqlCommand command1 = maConnexion.CreateCommand();
-                                    command1.CommandText = requete1;
-                                    command1.Parameters.Add(numP_2);
-                                    MySqlDataReader reader1 = command1.ExecuteReader();
+                                    string requete2 = "SELECT COUNT(*)-1 FROM Piece WHERE numP=@numP AND p_numCommande IS NULL;";
+                                    MySqlCommand command2 = maConnexion.CreateCommand();
+                                    command2.CommandText = requete2;
+                                    command2.Parameters.Add(numP_2);
+                                    MySqlDataReader reader2 = command2.ExecuteReader();
                                     int stock = 0;
-                                    while (reader1.Read())
+                                    while (reader2.Read())
                                     {
-                                        stock = Convert.ToInt32(reader1[0]);
+                                        stock = Convert.ToInt32(reader2[0]);
                                     }
-                                    reader1.Close();
-                                    if(stock==0)
+                                    reader2.Close();
+                                    if (stock == 0)
                                     {
-                                        //Passer une commande 
+                                        //Passer une commande au près d'un fournisseur pour cette pièce 
                                     }
                                     else
                                     {
-                                        if(stock<=2)
+                                        // Le fait de demander l'adresse et tout peut-être le rajouter dans la fonction CreationCommande plutôt que dans le main
+                                        Console.WriteLine("Si vous n'êtes pas encore client chez nous, penser à d'abord vous créez un compte");
+                                        Console.WriteLine("Quelle est votre numéro de client :");
+                                        int numClient = Convert.ToInt32(Console.ReadLine());
+                                        Console.Clear();
+                                        Console.WriteLine("A quelle adresse voulez-vous être livrer (numéro et rue) :");
+                                        string adresse = Convert.ToString(Console.ReadLine());
+                                        Console.Clear();
+                                        Console.WriteLine("Dans quelle ville se trouve l'adresse ? :");
+                                        string ville = Convert.ToString(Console.ReadLine());
+                                        Console.Clear();
+                                        Console.WriteLine("Quel est le code postal ? :");
+                                        string codePostal = Convert.ToString(Console.ReadLine());
+                                        Console.Clear();
+                                        CreationCommande(numCommande, adresse, ville, codePostal, numClient, maConnexion);
+                                        //ModificationPiece("p_numCommande", Convert.ToString(numCommande), numP, maConnexion);
+                                        Console.WriteLine("Commande effectué de " + numP + " avec succès !");
+                                        //Console.ReadKey();
+                                        if (stock <= 1)
                                         {
-                                            Console.WriteLine("Penser à recommander la pièce " + numP);
+                                            Console.WriteLine("Mr.Legrand, penser à racheter la pièce : " + numP);
+                                            Console.ReadKey();
                                         }
                                     }
                                     break;
-                                case 2:
-
+                                case 7:
                                     break;
                             }
                         };
                         break;
-                        
+                    #endregion
+                    // PAS FAIT
+                    #region Passer une commande (vers un fournisseur)
                     case 2:
                         Console.Clear();
                         break;
+                    #endregion
+                    #region Ajouter un client à la base de données
+                    case 3:
+                        Console.Clear();
+                        Console.WriteLine("Quel type de client êtes-vous ?\n"
+                                         + "1. Un particulier\n"
+                                         + "2. Une boutique\n");
+                        int choix3 = SaisieNombre();
+                        Console.Clear();
+                        Console.WriteLine("Quelle est votre adresse ? (numéro + rue) :");
+                        string adresse1 = Convert.ToString(Console.ReadLine());
+                        Console.Clear();
+                        Console.WriteLine("Quelle est la ville ? :");
+                        string ville1 = Convert.ToString(Console.ReadLine());
+                        Console.Clear();
+                        Console.WriteLine("Quel est le code postal ? :");
+                        string codePostal1 = Convert.ToString(Console.ReadLine());
+                        Console.Clear();
+                        Console.WriteLine("Quelle est la province ? :");
+                        string province1 = Convert.ToString(Console.ReadLine());
+                        Console.Clear();
+                        Console.WriteLine("Quel est votre numéro de téléphone ? :");
+                        string tel1 = Convert.ToString(Console.ReadLine());
+                        Console.Clear();
+                        Console.WriteLine("Quelle est votre adresse mail ? :");
+                        string courriel1 = Convert.ToString(Console.ReadLine());
+                        Console.Clear();
+                        switch (choix3)
+                        {
+                            case 1:
+                                Console.WriteLine("Quelle est votre nom ? :");
+                                string nom1 = Convert.ToString(Console.ReadLine()).ToUpper();
+                                Console.Clear();
+                                Console.WriteLine("Quel est votre prénom ? :");
+                                string prenom1 = Convert.ToString(Console.ReadLine());
+                                Console.Clear();
+                                //Ajouter le fait qu'une personne peut suivre un programme Fidelio en s'inscrivant
+                                //Console.WriteLine("Désirez vous suivre un programme Fidélio");
+                                CreationPersonne(adresse1, ville1, codePostal1, province1, nom1, prenom1, tel1, courriel1, 0, maConnexion);
+                                Console.WriteLine("Bienvenue : " + nom1 + " " + prenom1);
+                                break;
+                            case 2:
+                                Console.WriteLine("Quel est le nom de votre boutique ? :");
+                                string nom_b1 = Convert.ToString(Console.ReadLine());
+                                Console.Clear();
+                                Console.WriteLine("Entrer le nom de votre contact :");
+                                string contact1 = Convert.ToString(Console.ReadLine());
+                                Console.Clear();
+                                CreationBoutique(adresse1, ville1, codePostal1, province1, nom_b1, tel1, courriel1, contact1, 0, maConnexion);
+                                Console.WriteLine("Bienvenue : " + nom_b1);
+                                break;
+                        }
+                        break;
+                        #endregion
                 }
                 Console.WriteLine("Tapez Escape pour retourner au menu principal");
                 cki = Console.ReadKey();
