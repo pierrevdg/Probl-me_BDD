@@ -32,7 +32,6 @@ namespace Problème
             int nombre = Convert.ToInt32(Console.ReadLine());
             return nombre;
         }
-        // PLUTOT QUE SUPPRESSION PIECE FAIRE MODIFICATION PIECE OU ON AJOUTE LE NUMERO DE LA COMMANDE
         #region Gestion des pièces
         //La fonction prend en argument le numéro de pièce 
         static void InsertionPiece(string numP, MySqlConnection maConnexion)
@@ -416,62 +415,98 @@ namespace Problème
             command.ExecuteReader();
         }
         #endregion
-        // Problème dans les moyennes piece et vélos, il faut prendre en compte également les commandes où il y a juste des vélos commandés dans la moyenne pièce et inversement pour la moyenne vélo
         #region Moyenne du nombre de pièces par commande
-        static double MoyennePieceCommande(MySqlConnection maConnexion)
+        static void MoyennePieceCommande(MySqlConnection maConnexion)
         {
-            string requete = "SELECT COUNT(*)/COUNT(DISTINCT p_numCommande) FROM Piece WHERE p_numCommande IS NOT NULL;";
-            MySqlCommand command = maConnexion.CreateCommand();
-            command.CommandText = requete;
-            MySqlDataReader reader = command.ExecuteReader();
+            string requete1 = "SELECT COUNT(*) FROM piece WHERE p_numCommande IS NOT NULL;";
+            MySqlCommand command1 = maConnexion.CreateCommand();
+            command1.CommandText = requete1;
+            MySqlDataReader reader1 = command1.ExecuteReader();
             double moyenne = 0;
-            while (reader.Read())
+            double nombreCommande = 0;
+            double nombrePiece = 0;
+            while (reader1.Read())
             {
-                moyenne = Convert.ToDouble(reader[0]);
+                nombrePiece = Convert.ToInt32(reader1[0]);
             }
-            reader.Close();
-            return moyenne;
+            reader1.Close();
+            string requete2 = "SELECT COUNT(*) FROM bon_de_commande;";
+            MySqlCommand command2 = maConnexion.CreateCommand();
+            command2.CommandText = requete2;
+            MySqlDataReader reader2 = command2.ExecuteReader();
+            while (reader2.Read())
+            {
+                nombreCommande = Convert.ToInt32(reader2[0]);
+            }
+            reader2.Close();
+            moyenne = nombrePiece / nombreCommande;
+            Console.WriteLine("Moyenne de pièces par commande : " + moyenne);
         }
         #endregion
         #region Moyenne du nombre de vélos par commande
-        static double MoyenneVeloCommande(MySqlConnection maConnexion)
+        static void MoyenneVeloCommande(MySqlConnection maConnexion)
         {
-            string requete = "SELECT COUNT(*)/COUNT(DISTINCT numCommande) FROM Bicyclette WHERE numCommande IS NOT NULL;";
-            MySqlCommand command = maConnexion.CreateCommand();
-            command.CommandText = requete;
-            MySqlDataReader reader = command.ExecuteReader();
+            string requete1 = "SELECT COUNT(*) FROM bicyclette WHERE numCommande IS NOT NULL;";
+            MySqlCommand command1 = maConnexion.CreateCommand();
+            command1.CommandText = requete1;
+            MySqlDataReader reader1 = command1.ExecuteReader();
             double moyenne = 0;
-            while (reader.Read())
+            double nombreCommande = 0;
+            double nombreVelo = 0;
+            while (reader1.Read())
             {
-                moyenne = Convert.ToDouble(reader[0]);
+                nombreVelo = Convert.ToInt32(reader1[0]);
             }
-            reader.Close();
-            return moyenne;
+            reader1.Close();
+            string requete2 = "SELECT COUNT(*) FROM bon_de_commande;";
+            MySqlCommand command2 = maConnexion.CreateCommand();
+            command2.CommandText = requete2;
+            MySqlDataReader reader2 = command2.ExecuteReader();
+            while (reader2.Read())
+            {
+                nombreCommande = Convert.ToInt32(reader2[0]);
+            }
+            reader2.Close();
+            moyenne = nombreVelo / nombreCommande;
+            Console.WriteLine("Moyenne de vélos par commande : " + moyenne);
         }
         #endregion
-        //Requête pas fonctionnel ici
         #region Moyenne des montants de commande
         static void MoyenneCommande(MySqlConnection maConnexion)
         {
-            string requete = "SELECT SUM(prixV+prixP)/COUNT(DISTINCT numCommande) AS moyenne_commande FROM Bicyclette B, Piece P, Envoi E WHERE P.numI_p = E.numI_p AND numCommande IS NOT NULL AND p_numCommande IS NOT NULL;";
-            MySqlCommand command = maConnexion.CreateCommand();
-            command.CommandText = requete;
-
-            MySqlDataReader reader = command.ExecuteReader();
-
-            string[] valueString = new string[reader.FieldCount];
-            //Rajouter des lignes ?
-            while (reader.Read())
+            string requete1 = "SELECT SUM(prixP) FROM piece WHERE p_numCommande IS NOT NULL;";
+            MySqlCommand command1 = maConnexion.CreateCommand();
+            command1.CommandText = requete1;
+            MySqlDataReader reader1 = command1.ExecuteReader();
+            double moyenne = 0;
+            double nombreCommande = 0;
+            double prixV = 0;
+            double prixP = 0;
+            while (reader1.Read())
             {
-                for (int i = 0; i < reader.FieldCount; i++)
-                {
-                    valueString[i] = reader.GetValue(i).ToString(); //VERIFIER
-                    Console.Write(valueString[i] + " , ");
-                }
-                Console.WriteLine();
-                reader.Close();
-                command.Dispose();
+                prixP = Convert.ToInt32(reader1[0]);
             }
+            reader1.Close();
+            string requete2 = "SELECT SUM(prixV) FROM bicyclette WHERE numCommande IS NOT NULL;";
+            MySqlCommand command2 = maConnexion.CreateCommand();
+            command2.CommandText = requete2;
+            MySqlDataReader reader2 = command2.ExecuteReader();
+            while (reader2.Read())
+            {
+                prixV = Convert.ToInt32(reader2[0]);
+            }
+            reader2.Close();
+            string requete3 = "SELECT COUNT(*) FROM bon_de_commande;";
+            MySqlCommand command3 = maConnexion.CreateCommand();
+            command3.CommandText = requete3;
+            MySqlDataReader reader3 = command3.ExecuteReader();
+            while (reader3.Read())
+            {
+                nombreCommande = Convert.ToInt32(reader3[0]);
+            }
+            reader3.Close();
+            moyenne = (prixP + prixV) / nombreCommande;
+            Console.WriteLine("Moyenne montant de commande : " + moyenne + " euros");
         }
         #endregion
         // La requête n'est pas fonctionnelle
@@ -515,18 +550,17 @@ namespace Problème
         #region Quantités vendues de chaque item
         static void QuantitesVendues(MySqlConnection maConnexion)
         {
-            string requete = "SELECT nomV AS article, COUNT(*) - 1 AS quantite FROM Bicyclette GROUP BY nomV, grandeur UNION SELECT numP AS article, COUNT(*)-1 AS quantite FROM Piece GROUP BY nomP, numP;";
+            string requete = "SELECT nomV AS article, grandeur AS detail, COUNT(*) AS vente FROM Bicyclette WHERE numCommande IS NOT NULL GROUP BY nomV, grandeur UNION SELECT numP AS article, nomP AS detail, COUNT(*) AS vente FROM Piece WHERE p_numCommande IS NOT NULL GROUP BY nomP, numP;";
             MySqlCommand command = maConnexion.CreateCommand();
             command.CommandText = requete;
             MySqlDataReader reader = command.ExecuteReader();
             while (reader.Read())
             {
-                Console.WriteLine("Article : " + reader[0] + ", ventes : " + reader[1]);
+                Console.WriteLine("Article : " + reader[0] + " " + reader[1] + ", vente : " + reader[2]);
             }
             reader.Close();
         }
         #endregion
-        // Trouver comment ajouter les catégories de vélo où on a 0 de quantité 
         #region Inventaire catégorie de vélos
         static void InventaireCategorieVelos(MySqlConnection maConnexion)
         {
@@ -583,6 +617,47 @@ namespace Problème
             reader.Close();
         }
         #endregion
+        #region Fonction demo
+        static void Demo(MySqlConnection maConnexion)
+        {
+            string requete1 = "SELECT COUNT(*) FROm client;";
+            MySqlCommand command1 = maConnexion.CreateCommand();
+            command1.CommandText = requete1;
+            MySqlDataReader reader1 = command1.ExecuteReader();
+            int nombreClients = 0;
+            while (reader1.Read())
+            {
+                nombreClients = Convert.ToInt32(reader1[0]);
+            }
+            reader1.Close();
+            Console.WriteLine("Nombre de clients : " + nombreClients);
+            Console.WriteLine("Appuyez sur une touche pour la suite");
+            Console.ReadKey();
+            Console.Clear();
+            Console.WriteLine("Cumul en euros de chaque client : NON FONCTIONNEL");
+            Console.WriteLine("Appuyez sur une touche pour la suite");
+            Console.ReadKey();
+            Console.Clear();
+            Console.WriteLine("Liste des pièces avec un stock inférieur ou égal à 2 et leur quantité :");
+            string requete3 = "SELECT DISTINCT numP AS numero_modele, COUNT(*)-1 AS quantite FROM Piece WHERE p_numCommande IS NULL GROUP BY numP HAVING COUNT(*) <= 3;";
+            MySqlCommand command3 = maConnexion.CreateCommand();
+            command3.CommandText = requete3;
+            MySqlDataReader reader3 = command3.ExecuteReader();
+            while (reader3.Read())
+            {
+                Console.WriteLine("Piece : " + reader3[0] + ", quantite : " + reader3[1]);
+            }
+            reader3.Close();
+            Console.WriteLine("Appuyez sur une touche pour la suite");
+            Console.ReadKey();
+            Console.Clear();
+            InventaireFournisseur(maConnexion);
+            Console.WriteLine("Appuyez sur une touche pour la suite");
+            Console.ReadKey();
+            Console.Clear();
+            Console.WriteLine("Export d'une table en XML : PAS FAIT");
+        }
+        #endregion
         static void Main(string[] args)
         {
             #region Ouverture de connexion
@@ -611,14 +686,12 @@ namespace Problème
             {
                 Console.Clear();
                 Console.WriteLine("Menu :\n"
-                                 + "1. Passer une commande (pour un client)\n"
-                                 + "2. Passer une commande (vers un fournisseur)\n"
+                                 + "1. Passer une commande (pour un client), NON FONCTIONNEL\n"
+                                 + "2. Passer une commande (vers un fournisseur) : PAS FAIT\n"
                                  + "3. Ajouter un client à la base de données\n"
                                  + "4. Aperçu des stocks\n"
-                                 + "5. Modification d'informations\n"
-                                 + "6. Module statistiques\n"
-                                 + "7. Démo\n"
-                                 + "8. TEST\n"
+                                 + "5. Module statistiques\n"
+                                 + "6. Démo\n"
                                  + "Sélectionnez l'action désirée ");
                 int choix = SaisieNombre();
                 //rajouter un try pour prendre que les trucs possibles à faire
@@ -706,7 +779,6 @@ namespace Problème
                         };
                         break;
                     #endregion
-                    // PAS FAIT
                     #region Passer une commande (vers un fournisseur)
                     case 2:
                         Console.Clear();
@@ -790,18 +862,51 @@ namespace Problème
                         }
                         break;
                     #endregion
-                    // Pas sûr que ce soit utile à faire
-                    #region Modifications d'informations
+                    #region Module statistiques 
                     case 5:
+                        Console.Clear();
+                        Console.WriteLine("Quelles statistiques souhaitez-vous ?\n" 
+                                         + "1. Moyenne du nombre de pièces par commande\n"
+                                         + "2. Moyenne du nombre de vélos par commande\n"
+                                         + "3. Moyenne des montants de commande\n"
+                                         + "4. Meilleurs clients en fonctions du nombre de pièces (pas fonctionnel)\n"
+                                         + "5. Liste des membres pour chaque programme\n"
+                                         + "6. Quantité vendue de chaque item");
+                        int choix6 = SaisieNombre();
+                        switch(choix6)
+                        {
+                            case 1:
+                                Console.Clear();
+                                MoyennePieceCommande(maConnexion);
+                                break;
+                            case 2:
+                                Console.Clear();
+                                MoyenneVeloCommande(maConnexion);
+                                break;
+                            case 3:
+                                Console.Clear();
+                                MoyenneCommande(maConnexion);
+                                break;
+                            case 4:
+                                Console.Clear();
+                                Console.WriteLine("Pas fonctionnel");
+                                break;
+                            case 5:
+                                Console.Clear();
+                                StatsFidelio(maConnexion);
+                                break;
+                            case 6:
+                                Console.Clear();
+                                QuantitesVendues(maConnexion);
+                                break;
+                        }
                         break;
                     #endregion
-                    // A FAIRE
-                    #region Module statistiques 
-                    case 6:
-                        break;
-                        #endregion
-                    // A FAIRE
                     #region Demo
+                    case 6:
+                        Console.Clear();
+                        Demo(maConnexion);
+                        break;
                     #endregion
                 }
                 Console.WriteLine("Tapez Escape pour retourner au menu principal");
